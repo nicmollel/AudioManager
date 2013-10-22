@@ -1,0 +1,201 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A110BF4818160FC60011857A /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = A110BF4718160FC60011857A /* main.c */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A110BF4118160FC60011857A /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		A110BF4318160FC60011857A /* AudioManager */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = AudioManager; sourceTree = BUILT_PRODUCTS_DIR; };
+		A110BF4718160FC60011857A /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		A110BF4918160FC60011857A /* AudioManager.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = AudioManager.1; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A110BF4018160FC60011857A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A110BF3818160FC60011857A = {
+			isa = PBXGroup;
+			children = (
+				A110BF4618160FC60011857A /* AudioManager */,
+				A110BF4418160FC60011857A /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A110BF4418160FC60011857A /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A110BF4318160FC60011857A /* AudioManager */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A110BF4618160FC60011857A /* AudioManager */ = {
+			isa = PBXGroup;
+			children = (
+				A110BF4718160FC60011857A /* main.c */,
+				A110BF4918160FC60011857A /* AudioManager.1 */,
+			);
+			path = AudioManager;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A110BF4218160FC60011857A /* AudioManager */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A110BF4C18160FC60011857A /* Build configuration list for PBXNativeTarget "AudioManager" */;
+			buildPhases = (
+				A110BF3F18160FC60011857A /* Sources */,
+				A110BF4018160FC60011857A /* Frameworks */,
+				A110BF4118160FC60011857A /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = AudioManager;
+			productName = AudioManager;
+			productReference = A110BF4318160FC60011857A /* AudioManager */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A110BF3A18160FC60011857A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				ORGANIZATIONNAME = Amherst;
+			};
+			buildConfigurationList = A110BF3D18160FC60011857A /* Build configuration list for PBXProject "AudioManager" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = A110BF3818160FC60011857A;
+			productRefGroup = A110BF4418160FC60011857A /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A110BF4218160FC60011857A /* AudioManager */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A110BF3F18160FC60011857A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A110BF4818160FC60011857A /* main.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A110BF4A18160FC60011857A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = DEBUG;
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		A110BF4B18160FC60011857A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		A110BF4D18160FC60011857A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		A110BF4E18160FC60011857A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A110BF3D18160FC60011857A /* Build configuration list for PBXProject "AudioManager" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A110BF4A18160FC60011857A /* Debug */,
+				A110BF4B18160FC60011857A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A110BF4C18160FC60011857A /* Build configuration list for PBXNativeTarget "AudioManager" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A110BF4D18160FC60011857A /* Debug */,
+				A110BF4E18160FC60011857A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A110BF3A18160FC60011857A /* Project object */;
+}
