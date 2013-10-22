@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		A110BF4818160FC60011857A /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = A110BF4718160FC60011857A /* main.c */; };
+		A110BF5E18169AF20011857A /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A110BF5D18169AF20011857A /* CoreAudio.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -26,6 +27,7 @@
 		A110BF4318160FC60011857A /* AudioManager */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = AudioManager; sourceTree = BUILT_PRODUCTS_DIR; };
 		A110BF4718160FC60011857A /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		A110BF4918160FC60011857A /* AudioManager.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = AudioManager.1; sourceTree = "<group>"; };
+		A110BF5D18169AF20011857A /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -33,6 +35,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A110BF5E18169AF20011857A /* CoreAudio.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -42,6 +45,7 @@
 		A110BF3818160FC60011857A = {
 			isa = PBXGroup;
 			children = (
+				A110BF5D18169AF20011857A /* CoreAudio.framework */,
 				A110BF4618160FC60011857A /* AudioManager */,
 				A110BF4418160FC60011857A /* Products */,
 			);
@@ -194,6 +198,7 @@
 				A110BF4E18160FC60011857A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

@@ -15,10 +15,11 @@ static OSStatus GetAudioDevices (Ptr * devices, UInt16 * devicesAvailable)
 {
     OSStatus err = noErr;
     UInt32 outSize;
-    Boolean outWriteable;
-    
+    AudioObjectPropertyAddress thePropertyAddress = {kAudioHardwarePropertyDevices,kAudioObjectPropertyScopeGlobal,kAudioObjectPropertyElementMaster};
+
     //find out how many audio devices there is
-    err = AudioHardwareGetPropertyInfo(kAudioHardwarePropertyDevices,&outSize, &outWriteable);
+    err = AudioObjectGetPropertyDataSize(kAudioObjectSystemObject, &thePropertyAddress, 0, NULL, &outSize);
+
     if (err != noErr)
         return err;
     
@@ -36,8 +37,8 @@ static OSStatus GetAudioDevices (Ptr * devices, UInt16 * devicesAvailable)
     
     memset(*devices, 0, outSize);
     
-    err = AudioHardwareGetProperty(kAudioHardwarePropertyDevices, &outSize, (void*) *devices);
-    
+    err = AudioObjectGetPropertyData(kAudioObjectSystemObject, &thePropertyAddress,0,NULL, &outSize, *devices);
+        
     if (err != noErr)
         return err;
     
