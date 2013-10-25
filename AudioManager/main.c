@@ -46,16 +46,43 @@ static OSStatus GetAudioDevices (Ptr * devices, UInt16 * devicesAvailable)
 
 }
 
+static OSStatus PrintDeviceNames(AudioDeviceID * devices, UInt16 * nDevicesFound){
+    OSStatus err = noErr;
+    CFStringRef sDeviceName;    
+    UInt32 outSize = sizeof(CFStringRef);
+    AudioObjectPropertyAddress oPropertyAddress = {kAudioObjectPropertyName,kAudioObjectPropertyScopeGlobal,kAudioObjectPropertyElementMaster};
+
+    //Do the actual printing     
+    fprintf(stdout, "Total Available Devices: %d\n",*nDevicesFound);
+
+    for (UInt16 nIndex = 0; nIndex < *nDevicesFound; nIndex++){
+        if ((err = AudioObjectGetPropertyData(devices[nIndex],&oPropertyAddress, 0, NULL,&outSize, &sDeviceName)) != err)
+            return err;
+        fprintf(stdout, "%d:\t%s\n",nIndex+1,CFStringGetCStringPtr(sDeviceName,CFStringGetSystemEncoding()));
+    }
+
+    //clean up
+    if (sDeviceName)
+        CFRelease(sDeviceName);
+    return noErr;
+}
+
 int main (int argc, const char * argv[])
 {
 
     OSStatus err = noErr;
-//    UInt32 outSize = 0;
     UInt16 DevicesAvailable = 0;
     AudioDeviceID * devices = NULL;
     
     if ((err = GetAudioDevices((Ptr*)&devices, &DevicesAvailable)) != noErr)
         return err;
+ 
+    if ((err = PrintDeviceNames(devices, &DevicesAvailable)) != noErr)
+        return err;
+    
+    //clean up
+    if(devices)
+        free(devices);
     
     return 0;
 }

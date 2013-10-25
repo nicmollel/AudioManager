@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		A110BF4818160FC60011857A /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = A110BF4718160FC60011857A /* main.c */; };
 		A110BF5E18169AF20011857A /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A110BF5D18169AF20011857A /* CoreAudio.framework */; };
+		A1EDE7DC18177A0700E4F2B3 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1EDE7DB18177A0700E4F2B3 /* Cocoa.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -28,6 +29,7 @@
 		A110BF4718160FC60011857A /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		A110BF4918160FC60011857A /* AudioManager.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = AudioManager.1; sourceTree = "<group>"; };
 		A110BF5D18169AF20011857A /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
+		A1EDE7DB18177A0700E4F2B3 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -35,6 +37,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1EDE7DC18177A0700E4F2B3 /* Cocoa.framework in Frameworks */,
 				A110BF5E18169AF20011857A /* CoreAudio.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -45,6 +48,7 @@
 		A110BF3818160FC60011857A = {
 			isa = PBXGroup;
 			children = (
+				A1EDE7DB18177A0700E4F2B3 /* Cocoa.framework */,
 				A110BF5D18169AF20011857A /* CoreAudio.framework */,
 				A110BF4618160FC60011857A /* AudioManager */,
 				A110BF4418160FC60011857A /* Products */,
