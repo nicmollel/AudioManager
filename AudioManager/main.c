@@ -56,9 +56,20 @@ static OSStatus PrintDeviceNames(AudioDeviceID * devices, UInt16 * nDevicesFound
     fprintf(stdout, "Total Available Devices: %d\n",*nDevicesFound);
 
     for (UInt16 nIndex = 0; nIndex < *nDevicesFound; nIndex++){
+ 
+        oPropertyAddress.mSelector = kAudioObjectPropertyName;
         if ((err = AudioObjectGetPropertyData(devices[nIndex],&oPropertyAddress, 0, NULL,&outSize, &sDeviceName)) != err)
             return err;
-        fprintf(stdout, "%d:\t%s\n",nIndex+1,CFStringGetCStringPtr(sDeviceName,CFStringGetSystemEncoding()));
+    
+        fprintf(stdout, "%d:\t%s,\t",nIndex+1,CFStringGetCStringPtr(sDeviceName,CFStringGetSystemEncoding()));
+        
+        oPropertyAddress.mSelector = kAudioDevicePropertyDeviceUID;
+
+        //Device UID
+        if ((err = AudioObjectGetPropertyData(devices[nIndex],&oPropertyAddress, 0, NULL,&outSize, &sDeviceName)) != err)
+            return err;
+        fprintf(stdout, "DeviceUID:\t%s\n",CFStringGetCStringPtr(sDeviceName,CFStringGetSystemEncoding()));
+
     }
 
     //clean up
