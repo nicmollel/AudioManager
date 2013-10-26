@@ -9,16 +9,18 @@
 #include <stdio.h>
 #include <CoreAudio/CoreAudio.h>
 
-//Get Device List 
+//AudioObjectPropertyAddress 
+static AudioObjectPropertyAddress oPropertyAddress = {0,kAudioObjectPropertyScopeGlobal,kAudioObjectPropertyElementMaster};
 
-static OSStatus GetAudioDevices (Ptr * devices, UInt16 * devicesAvailable) 
+//Get Device List 
+static OSStatus GetAudioDevices (Ptr *devices, UInt16 *devicesAvailable) 
 {
     OSStatus err = noErr;
     UInt32 outSize;
-    AudioObjectPropertyAddress thePropertyAddress = {kAudioHardwarePropertyDevices,kAudioObjectPropertyScopeGlobal,kAudioObjectPropertyElementMaster};
+    oPropertyAddress.mSelector = kAudioHardwarePropertyDevices;
 
     //find out how many audio devices there is
-    err = AudioObjectGetPropertyDataSize(kAudioObjectSystemObject, &thePropertyAddress, 0, NULL, &outSize);
+    err = AudioObjectGetPropertyDataSize(kAudioObjectSystemObject,&oPropertyAddress, 0, NULL, &outSize);
 
     if (err != noErr)
         return err;
@@ -37,7 +39,7 @@ static OSStatus GetAudioDevices (Ptr * devices, UInt16 * devicesAvailable)
     
     memset(*devices, 0, outSize);
     
-    err = AudioObjectGetPropertyData(kAudioObjectSystemObject, &thePropertyAddress,0,NULL, &outSize, *devices);
+    err = AudioObjectGetPropertyData(kAudioObjectSystemObject,&oPropertyAddress,0,NULL, &outSize, *devices);
         
     if (err != noErr)
         return err;
@@ -46,28 +48,35 @@ static OSStatus GetAudioDevices (Ptr * devices, UInt16 * devicesAvailable)
 
 }
 
-static OSStatus PrintDeviceNames(AudioDeviceID * devices, UInt16 * nDevicesFound){
+static OSStatus PrintDeviceNames(const AudioDeviceID *devices, const UInt16 *nDevicesFound){
     OSStatus err = noErr;
     CFStringRef sDeviceName;    
     UInt32 outSize = sizeof(CFStringRef);
-    AudioObjectPropertyAddress oPropertyAddress = {kAudioObjectPropertyName,kAudioObjectPropertyScopeGlobal,kAudioObjectPropertyElementMaster};
 
-    //Do the actual printing     
+    //Do the actual printing  
     fprintf(stdout, "Total Available Devices: %d\n",*nDevicesFound);
 
     for (UInt16 nIndex = 0; nIndex < *nDevicesFound; nIndex++){
  
         oPropertyAddress.mSelector = kAudioObjectPropertyName;
-        if ((err = AudioObjectGetPropertyData(devices[nIndex],&oPropertyAddress, 0, NULL,&outSize, &sDeviceName)) != err)
+        if ((err = AudioObjectGetPropertyData(devices[nIndex],&oPropertyAddress, 0, NULL,&outSize, &sDeviceName)) != err){
+            if (sDeviceName)
+                CFRelease(sDeviceName);
             return err;
+
+        }
     
         fprintf(stdout, "%d:\t%s,\t",nIndex+1,CFStringGetCStringPtr(sDeviceName,CFStringGetSystemEncoding()));
         
         oPropertyAddress.mSelector = kAudioDevicePropertyDeviceUID;
 
         //Device UID
-        if ((err = AudioObjectGetPropertyData(devices[nIndex],&oPropertyAddress, 0, NULL,&outSize, &sDeviceName)) != err)
+        if ((err = AudioObjectGetPropertyData(devices[nIndex],&oPropertyAddress, 0, NULL,&outSize, &sDeviceName)) != err){
+            if (sDeviceName)
+                CFRelease(sDeviceName);
             return err;
+
+        }
         fprintf(stdout, "DeviceUID:\t%s\n",CFStringGetCStringPtr(sDeviceName,CFStringGetSystemEncoding()));
 
     }
@@ -78,19 +87,74 @@ static OSStatus PrintDeviceNames(AudioDeviceID * devices, UInt16 * nDevicesFound
     return noErr;
 }
 
+static OSStatus SetDefaultAudioDevice(const AudioDeviceID *devices, const UInt16 *nAvailableDevices, const char *sDeviceUID, UInt16 nIO){
+    OSStatus err = noErr;
+    CFStringRef sUID; 
+    UInt32 nOutSize = sizeof(CFStringRef);
+    CFStringRef sTempUID = CFStringCreateWithCString(kCFAllocatorDefault, sDeviceUID, CFStringGetSystemEncoding());
+    
+    //loop through the list fo find the device
+    for (UInt16 nIndex = 0; nIndex < *nAvailableDevices; nIndex++){
+        oPropertyAddress.mSelector = kAudioDevicePropertyDeviceUID;
+        if ((err = AudioObjectGetPropertyData(devices[nIndex],&oPropertyAddress, 0, NULL,&nOutSize, &sUID)) != err){
+            //clean up before exiting
+            if (sUID)
+                CFRelease(sUID);   
+            CFRelease(sTempUID);
+            return err;  
+        }
+ 
+        //is This the device I am looking for?            
+        if (CFStringCompare(sUID,sTempUID,0) == kCFCompareEqualTo){
+            //set this as the default device
+            oPropertyAddress.mSelector = nIO? kAudioHardwarePropertyDefaultInputDevice : kAudioHardwarePropertyDefaultOutputDevice;
+            if ((err = AudioObjectSetPropertyData(kAudioObjectSystemObject, &oPropertyAddress, 0, NULL, sizeof(AudioDeviceID), &devices[nIndex])) != noErr){
+                if (sUID)
+                    CFRelease(sUID);   
+                CFRelease(sTempUID);
+                return err;  
+                
+            } else {
+                fprintf(stdout, "Set the default device to: %s\n",sDeviceUID);
+                break;
+            }
+        }
+    }
+
+    //clean
+    if (sUID)
+        CFRelease(sUID);
+
+    CFRelease(sTempUID);
+    
+    return noErr;
+}
+
 int main (int argc, const char * argv[])
 {
 
     OSStatus err = noErr;
     UInt16 DevicesAvailable = 0;
-    AudioDeviceID * devices = NULL;
+    AudioDeviceID *devices = NULL;
     
-    if ((err = GetAudioDevices((Ptr*)&devices, &DevicesAvailable)) != noErr)
+    if ((err = GetAudioDevices((Ptr*)&devices, &DevicesAvailable)) != noErr){
+        if(devices)
+            free(devices);
         return err;
+    }
  
-    if ((err = PrintDeviceNames(devices, &DevicesAvailable)) != noErr)
+    if ((err = PrintDeviceNames(devices, &DevicesAvailable)) != noErr){
+        if(devices)
+            free(devices);
         return err;
-    
+    }
+    // nIO -> 0 : output
+    // nIO -> 1 : input 
+    if ((err = SetDefaultAudioDevice(devices, &DevicesAvailable, "SoundflowerEngine:1",0)) != noErr){
+        if(devices)
+            free(devices);
+        return err;
+    }
     //clean up
     if(devices)
         free(devices);
