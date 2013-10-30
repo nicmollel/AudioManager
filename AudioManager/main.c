@@ -7,10 +7,15 @@
 //
 
 #include <stdio.h>
+#include <spawn.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <CoreAudio/CoreAudio.h>
 
 //AudioObjectPropertyAddress 
 static AudioObjectPropertyAddress oPropertyAddress = {0,kAudioObjectPropertyScopeGlobal,kAudioObjectPropertyElementMaster};
+//environemnt variables 
+extern char **environ;
 
 //Get Device List 
 static OSStatus GetAudioDevices (Ptr *devices, UInt16 *devicesAvailable) 
@@ -87,6 +92,24 @@ static OSStatus PrintDeviceNames(const AudioDeviceID *devices, const UInt16 *nDe
     return noErr;
 }
 
+static int StartAuxProcesses(void){
+    pid_t ls_pid;
+    const char *ls_argv [] ={
+        "ls",
+        "-l",
+        "/",
+        NULL
+    };
+    
+    if(posix_spawnp(&ls_pid, ls_argv[0], NULL, NULL,ls_argv,NULL)!= 0){
+        fprintf(stdout, "spawn failed: %s\n",strerror(errno));
+        return -1;
+    }
+    
+    fprintf(stdout, "successful spawn with PID: %d\n",ls_pid);
+    return 0;
+}
+
 static OSStatus SetDefaultAudioDevice(const AudioDeviceID *devices, const UInt16 *nAvailableDevices, const char *sDeviceUID, UInt16 nIO){
     OSStatus err = noErr;
     CFStringRef sUID; 
@@ -115,7 +138,7 @@ static OSStatus SetDefaultAudioDevice(const AudioDeviceID *devices, const UInt16
                 return err;  
                 
             } else {
-                fprintf(stdout, "Set the default device to: %s\n",sDeviceUID);
+                fprintf(stdout, "Set the default %s device to: %s\n",nIO? "Input":"Output",sDeviceUID);
                 break;
             }
         }
@@ -132,7 +155,7 @@ static OSStatus SetDefaultAudioDevice(const AudioDeviceID *devices, const UInt16
 
 int main (int argc, const char * argv[])
 {
-
+    
     OSStatus err = noErr;
     UInt16 DevicesAvailable = 0;
     AudioDeviceID *devices = NULL;
@@ -150,11 +173,19 @@ int main (int argc, const char * argv[])
     }
     // nIO -> 0 : output
     // nIO -> 1 : input 
-    if ((err = SetDefaultAudioDevice(devices, &DevicesAvailable, "SoundflowerEngine:1",0)) != noErr){
-        if(devices)
-            free(devices);
-        return err;
+//    if ((err = SetDefaultAudioDevice(devices, &DevicesAvailable, "SoundflowerEngine:1",1)) != noErr){
+//        if(devices)
+//            free(devices);
+//        return err;
+//    }
+    
+    while(*environ != NULL){
+//        fprintf(stdout, "%s\n",*environ);
+        environ++;
     }
+        
+    StartAuxProcesses();
+    
     //clean up
     if(devices)
         free(devices);
