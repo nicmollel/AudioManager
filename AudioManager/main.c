@@ -10,6 +10,7 @@
 #include <spawn.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <pwd.h>
 #include <CoreAudio/CoreAudio.h>
 
 //AudioObjectPropertyAddress 
@@ -48,7 +49,6 @@ static OSStatus GetAudioDevices (Ptr *devices, UInt16 *devicesAvailable)
         
     if (err != noErr)
         return err;
-    
     return err;
 
 }
@@ -91,22 +91,39 @@ static OSStatus PrintDeviceNames(const AudioDeviceID *devices, const UInt16 *nDe
         CFRelease(sDeviceName);
     return noErr;
 }
-
-static int StartAuxProcesses(void){
-    pid_t ls_pid;
-    const char *ls_argv [] ={
-        "ls",
-        "-l",
-        "/",
-        NULL
-    };
+                                        
+static char *getRealHomeDir(void){
+    struct passwd *pwd = getpwuid(getuid());
     
-    if(posix_spawnp(&ls_pid, ls_argv[0], NULL, NULL,ls_argv,NULL)!= 0){
-        fprintf(stdout, "spawn failed: %s\n",strerror(errno));
+    if(pwd){ 
+        return pwd->pw_dir;
+    } else {
+        return getenv("HOME");
+    }
+}
+
+static int modifyPath(void){
+    char *temp, *path_env;
+
+    path_env = getenv("PATH"); 
+    temp = (char*) malloc((strlen(path_env)+100)*sizeof(char));
+    //modify the variable 
+    sprintf(temp, "%s:%s",path_env,"/usr/local/bin:/usr/local/sbin:/opt/local/bin:/opt/local/sbin");
+    //overwrite PATH with new value
+    setenv("PATH", temp,1);
+   
+    free(temp);
+    
+    return 0;
+}
+
+static int SpawnProcesses(pid_t *pid, const char **argv){
+    if(posix_spawnp(pid,argv[0], NULL, NULL,argv,NULL)!= 0){
+        fprintf(stdout, "spawning %s failed: %s\n",argv[0],strerror(errno));
         return -1;
     }
-    
-    fprintf(stdout, "successful spawn with PID: %d\n",ls_pid);
+
+    fprintf(stdout, "\n*********\nsuccessful spawn with PID: %d\n**************\n",*pid);
     return 0;
 }
 
@@ -155,10 +172,15 @@ static OSStatus SetDefaultAudioDevice(const AudioDeviceID *devices, const UInt16
 
 int main (int argc, const char * argv[])
 {
-    
+    char *real_homedir = getRealHomeDir();
+    pid_t icecast_pid,darkice_pid;
     OSStatus err = noErr;
     UInt16 DevicesAvailable = 0;
     AudioDeviceID *devices = NULL;
+    
+//    fprintf(stdout, "PATH:%s\n\n",argv[0]);
+    
+    modifyPath();
     
     if ((err = GetAudioDevices((Ptr*)&devices, &DevicesAvailable)) != noErr){
         if(devices)
@@ -171,25 +193,49 @@ int main (int argc, const char * argv[])
             free(devices);
         return err;
     }
+
     // nIO -> 0 : output
     // nIO -> 1 : input 
 //    if ((err = SetDefaultAudioDevice(devices, &DevicesAvailable, "SoundflowerEngine:1",1)) != noErr){
 //        if(devices)
 //            free(devices);
 //        return err;
-//    }
+//    }    
     
+    char *temp = (char*)malloc((strlen(real_homedir)+ 100)*sizeof(char));
+    sprintf(temp, "%s/%s",real_homedir,"icecast.xml");
+    const char *icecast [] ={
+        "icecast",
+        "-c",
+        temp,
+        "-b",
+        NULL
+    };
+
+    SpawnProcesses(&icecast_pid, icecast);
+    sleep(5); //wait for icecast to be all set up
+    free(temp);
+    temp = (char*)malloc((strlen(real_homedir)+ 100)*sizeof(char));
+    sprintf(temp, "%s/%s",real_homedir,"darkice.cfg");
+ 
+    const char *darkice [] ={
+        "darkice",
+        "-c",
+        temp,
+        NULL
+    };
+   SpawnProcesses(&darkice_pid,darkice);
+
     while(*environ != NULL){
 //        fprintf(stdout, "%s\n",*environ);
         environ++;
     }
-        
-    StartAuxProcesses();
-    
+//            
+
     //clean up
     if(devices)
-        free(devices);
-    
+        free(devices);   
+    free(temp);
     return 0;
 }
 
