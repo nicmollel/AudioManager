@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <pwd.h>
+#include <getopt.h>
 #include <CoreAudio/CoreAudio.h>
 
 //AudioObjectPropertyAddress 
@@ -175,10 +176,19 @@ int main (int argc, const char * argv[])
     char *real_homedir = getRealHomeDir();
     pid_t icecast_pid,darkice_pid;
     OSStatus err = noErr;
-    UInt16 DevicesAvailable = 0;
+    UInt16 actionFlag,DevicesAvailable = 0;
     AudioDeviceID *devices = NULL;
     
-//    fprintf(stdout, "PATH:%s\n\n",argv[0]);
+
+    //command line options
+    static struct option cmdline_options[] = {
+        {"pidfile", required_argument,NULL,'f'},
+        {"start",no_argument,NULL, 's'},
+        /* default is 0 and so if started without any option, it will stop running processes in the provided 
+            pid_file */
+        {"stop",no_argument,NULL,'k'},
+        {NULL,0,NULL,0}
+    };
     
     modifyPath();
     
@@ -202,7 +212,7 @@ int main (int argc, const char * argv[])
 //        return err;
 //    }    
     
-    char *temp = (char*)malloc((strlen(real_homedir)+ 100)*sizeof(char));
+    char *temp = malloc(strlen(real_homedir)+(sizeof(char)*50));
     sprintf(temp, "%s/%s",real_homedir,"icecast.xml");
     const char *icecast [] ={
         "icecast",
@@ -212,10 +222,10 @@ int main (int argc, const char * argv[])
         NULL
     };
 
-    SpawnProcesses(&icecast_pid, icecast);
+//    SpawnProcesses(&icecast_pid, icecast);
     sleep(5); //wait for icecast to be all set up
     free(temp);
-    temp = (char*)malloc((strlen(real_homedir)+ 100)*sizeof(char));
+    temp = malloc(strlen(real_homedir)+(sizeof(char)*50));
     sprintf(temp, "%s/%s",real_homedir,"darkice.cfg");
  
     const char *darkice [] ={
@@ -224,7 +234,7 @@ int main (int argc, const char * argv[])
         temp,
         NULL
     };
-   SpawnProcesses(&darkice_pid,darkice);
+//   SpawnProcesses(&darkice_pid,darkice);
 
     while(*environ != NULL){
 //        fprintf(stdout, "%s\n",*environ);
