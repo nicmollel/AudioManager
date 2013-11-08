@@ -19,7 +19,9 @@ static AudioObjectPropertyAddress oPropertyAddress = {0,kAudioObjectPropertyScop
 //environemnt variables 
 extern char **environ;
 
-//Get Device List 
+static pid_t icecast_pid,darkice_pid;
+
+/* Get Audio Device List */
 static OSStatus GetAudioDevices (Ptr *devices, UInt16 *devicesAvailable) 
 {
     OSStatus err = noErr;
@@ -54,6 +56,7 @@ static OSStatus GetAudioDevices (Ptr *devices, UInt16 *devicesAvailable)
 
 }
 
+/* Print Audio Devices */
 static OSStatus PrintDeviceNames(const AudioDeviceID *devices, const UInt16 *nDevicesFound){
     OSStatus err = noErr;
     CFStringRef sDeviceName;    
@@ -92,7 +95,8 @@ static OSStatus PrintDeviceNames(const AudioDeviceID *devices, const UInt16 *nDe
         CFRelease(sDeviceName);
     return noErr;
 }
-                                        
+     
+/* Get user home directory and not the sandbox home directory */
 static char *getRealHomeDir(void){
     struct passwd *pwd = getpwuid(getuid());
     
@@ -118,7 +122,7 @@ static int modifyPath(void){
     return 0;
 }
 
-static int SpawnProcesses(pid_t *pid, const char **argv){
+static int SpawnProcesses(pid_t *pid, char **argv){
     if(posix_spawnp(pid,argv[0], NULL, NULL,argv,NULL)!= 0){
         fprintf(stdout, "spawning %s failed: %s\n",argv[0],strerror(errno));
         return -1;
@@ -128,24 +132,22 @@ static int SpawnProcesses(pid_t *pid, const char **argv){
     return 0;
 }
 
+/* Change Default Audio device */
 static OSStatus SetDefaultAudioDevice(const AudioDeviceID *devices, const UInt16 *nAvailableDevices, const char *sDeviceUID, UInt16 nIO){
     OSStatus err = noErr;
     CFStringRef sUID; 
     UInt32 nOutSize = sizeof(CFStringRef);
     CFStringRef sTempUID = CFStringCreateWithCString(kCFAllocatorDefault, sDeviceUID, CFStringGetSystemEncoding());
     
-    //loop through the list fo find the device
     for (UInt16 nIndex = 0; nIndex < *nAvailableDevices; nIndex++){
         oPropertyAddress.mSelector = kAudioDevicePropertyDeviceUID;
         if ((err = AudioObjectGetPropertyData(devices[nIndex],&oPropertyAddress, 0, NULL,&nOutSize, &sUID)) != err){
-            //clean up before exiting
             if (sUID)
                 CFRelease(sUID);   
             CFRelease(sTempUID);
             return err;  
         }
  
-        //is This the device I am looking for?            
         if (CFStringCompare(sUID,sTempUID,0) == kCFCompareEqualTo){
             //set this as the default device
             oPropertyAddress.mSelector = nIO? kAudioHardwarePropertyDefaultInputDevice : kAudioHardwarePropertyDefaultOutputDevice;
@@ -171,25 +173,51 @@ static OSStatus SetDefaultAudioDevice(const AudioDeviceID *devices, const UInt16
     return noErr;
 }
 
-int main (int argc, const char * argv[])
-{
-    char *real_homedir = getRealHomeDir();
-    pid_t icecast_pid,darkice_pid;
-    OSStatus err = noErr;
-    UInt16 actionFlag,DevicesAvailable = 0;
-    AudioDeviceID *devices = NULL;
-    
-
-    //command line options
+/* Parse Commandline arguments and perform implied actions */
+static int parse_opts(const int *argc, char **argv){
+    UInt16 actionFlag;
     static struct option cmdline_options[] = {
         {"pidfile", required_argument,NULL,'f'},
         {"start",no_argument,NULL, 's'},
-        /* default is 0 and so if started without any option, it will stop running processes in the provided 
-            pid_file */
         {"stop",no_argument,NULL,'k'},
         {NULL,0,NULL,0}
     };
-    
+ 
+    int opt;
+    while ((opt = getopt_long(*argc, argv, "skf:",cmdline_options, NULL)) != 0){
+        switch(opt){
+            case 'f':
+                //process pid file                
+            case 's':
+                actionFlag = 1;
+                //start, restart if already running services
+            case 'k':
+                actionFlag = 0;
+                //stop service
+            case '?':
+                if (optopt == 'f')
+                    fprintf(stderr, "The option -%c a file argument.\n", optopt);
+                else if (isprint(optopt))
+                    fprintf(stderr, "Unknown option -%c .\n",optopt);
+                else
+                    fprintf(stderr, "Unkown option character `\\x%x \n",optopt);
+                
+                return -1;
+            default:
+                //print default usage, abort as a placeholder now
+                abort();    
+        }
+    }
+    return optind; /* Index of the last processed value in argv */
+}
+
+int main (int argc, const char * argv[])
+{
+    char *real_homedir = getRealHomeDir();
+    OSStatus err = noErr;
+    UInt16 DevicesAvailable = 0;
+    AudioDeviceID *devices = NULL;
+        
     modifyPath();
     
     if ((err = GetAudioDevices((Ptr*)&devices, &DevicesAvailable)) != noErr){
