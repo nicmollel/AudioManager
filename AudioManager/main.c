@@ -12,14 +12,14 @@
 #include <unistd.h>
 #include <pwd.h>
 #include <getopt.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <CoreAudio/CoreAudio.h>
 
 //AudioObjectPropertyAddress 
 static AudioObjectPropertyAddress oPropertyAddress = {0,kAudioObjectPropertyScopeGlobal,kAudioObjectPropertyElementMaster};
 //environemnt variables 
 extern char **environ;
-
-static pid_t icecast_pid,darkice_pid;
 
 /* Get Audio Device List */
 static OSStatus GetAudioDevices (Ptr *devices, UInt16 *devicesAvailable) 
@@ -97,21 +97,26 @@ static OSStatus PrintDeviceNames(const AudioDeviceID *devices, const UInt16 *nDe
 }
      
 /* Get user home directory and not the sandbox home directory */
-static char *getRealHomeDir(void){
-    struct passwd *pwd = getpwuid(getuid());
+static char *gethomedir(void){
+    struct passwd *pwd;
+   
+    errno = 0; /* to tell if there was an error in the execution */
+    pwd  = getpwuid(getuid());
     
     if(pwd){ 
         return pwd->pw_dir;
     } else {
+        if (errno)
+            perror("getpwuid");
         return getenv("HOME");
     }
 }
 
-static int modifyPath(void){
+static int modifypath(void){
     char *temp, *path_env;
 
     path_env = getenv("PATH"); 
-    temp = (char*) malloc((strlen(path_env)+100)*sizeof(char));
+    temp = malloc((strlen(path_env)+100)*sizeof(char));
     //modify the variable 
     sprintf(temp, "%s:%s",path_env,"/usr/local/bin:/usr/local/sbin:/opt/local/bin:/opt/local/sbin");
     //overwrite PATH with new value
@@ -122,7 +127,7 @@ static int modifyPath(void){
     return 0;
 }
 
-static int SpawnProcesses(pid_t *pid, char **argv){
+static int spawn_cmd(pid_t *pid, char **argv){
     if(posix_spawnp(pid,argv[0], NULL, NULL,argv,NULL)!= 0){
         fprintf(stdout, "spawning %s failed: %s\n",argv[0],strerror(errno));
         return -1;
@@ -173,9 +178,26 @@ static OSStatus SetDefaultAudioDevice(const AudioDeviceID *devices, const UInt16
     return noErr;
 }
 
-/* Parse Commandline arguments and perform implied actions */
-static int parse_opts(const int *argc, char **argv){
-    UInt16 actionFlag;
+/* Check if the given file exists and contains pid values */
+static int process_pid_file(const char *pidfile, pid_t *darkice, pid_t *icecast, const UInt16 IO){
+    struct stat buffer;
+    errno = 0;
+    if (stat(pidfile, &buffer) != 0)
+        perror("stat");
+    
+    if (buffer.st_mode){ //just a way to see that file/directory exists
+        if (S_ISREG(buffer.st_mode)){
+            //try to read/write from it
+        }
+    } else if (errno == ENOENT){ //File does not exists
+        
+    }
+    return 0;
+}
+
+                                                
+/* Parse Commandline arguments */
+static int parse_opts(const int *argc, char **argv,UInt16 *actionFlag, pid_t *darkice, pid_t *icecast){
     static struct option cmdline_options[] = {
         {"pidfile", required_argument,NULL,'f'},
         {"start",no_argument,NULL, 's'},
@@ -187,13 +209,13 @@ static int parse_opts(const int *argc, char **argv){
     while ((opt = getopt_long(*argc, argv, "skf:",cmdline_options, NULL)) != 0){
         switch(opt){
             case 'f':
-                //process pid file                
+                //process pid file and set darkice & icecast values                
             case 's':
-                actionFlag = 1;
-                //start, restart if already running services
+                *actionFlag = 1;
+                break;
             case 'k':
-                actionFlag = 0;
-                //stop service
+                *actionFlag = 0;
+                break;
             case '?':
                 if (optopt == 'f')
                     fprintf(stderr, "The option -%c a file argument.\n", optopt);
@@ -204,8 +226,8 @@ static int parse_opts(const int *argc, char **argv){
                 
                 return -1;
             default:
-                //print default usage, abort as a placeholder now
-                abort();    
+                //print default usage 
+                break;    
         }
     }
     return optind; /* Index of the last processed value in argv */
@@ -213,12 +235,12 @@ static int parse_opts(const int *argc, char **argv){
 
 int main (int argc, const char * argv[])
 {
-    char *real_homedir = getRealHomeDir();
+    char *real_homedir = gethomedir();
     OSStatus err = noErr;
     UInt16 DevicesAvailable = 0;
     AudioDeviceID *devices = NULL;
         
-    modifyPath();
+    modifypath();
     
     if ((err = GetAudioDevices((Ptr*)&devices, &DevicesAvailable)) != noErr){
         if(devices)
@@ -250,7 +272,7 @@ int main (int argc, const char * argv[])
         NULL
     };
 
-//    SpawnProcesses(&icecast_pid, icecast);
+//    spawn_cmd(&icecast_pid, icecast);
     sleep(5); //wait for icecast to be all set up
     free(temp);
     temp = malloc(strlen(real_homedir)+(sizeof(char)*50));
@@ -262,7 +284,7 @@ int main (int argc, const char * argv[])
         temp,
         NULL
     };
-//   SpawnProcesses(&darkice_pid,darkice);
+//   spawn_cmd(&darkice_pid,darkice);
 
     while(*environ != NULL){
 //        fprintf(stdout, "%s\n",*environ);
