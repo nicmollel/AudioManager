@@ -178,43 +178,69 @@ static OSStatus SetDefaultAudioDevice(const AudioDeviceID *devices, const UInt16
     return noErr;
 }
 
-/* Check if the given file exists and contains pid values */
+/* Read/Write PID values to pidfile */
 static int process_pid_file(const char *pidfile, pid_t *darkice, pid_t *icecast, const UInt16 IO){
-    struct stat buffer;
-    errno = 0;
-    if (stat(pidfile, &buffer) != 0)
-        perror("stat");
+    FILE *openstream; 
     
-    if (buffer.st_mode){ //just a way to see that file/directory exists
-        if (S_ISREG(buffer.st_mode)){
-            //try to read/write from it
-        }
-    } else if (errno == ENOENT){ //File does not exists
-        
+    openstream = fopen(pidfile, "w+");
+    if (openstream){
+        if (IO)//Output
+            fprintf(openstream, "icecast_pid:%d\ndarkice_pid:%d\n",*icecast,*darkice);
+        else 
+            fscanf(openstream, "icecast_pid:%d\ndarkice_pid:%d\n", (int*)icecast,(int*)darkice);
+        fclose(openstream);
+    } else {
+        perror("fopen in process_pid_file");
+        exit(EXIT_FAILURE);
     }
+    
     return 0;
 }
 
-                                                
+static void *start_service (const char *pidfile){
+    /*
+     1. Enumerate audio devices
+     2. Set correct audio device
+     3. modify PATH env variable
+     4. Start the services
+     5. Save PID values and return
+     */
+    
+    return NULL;
+}
+    
+static void *stop_service(const char *pidfile){
+    /*
+     1. Enumerate audio devices
+     2. get PID values from file
+     3. if valid PID values, stop services
+     4. overwrite PID values in file with 0
+     5. Revert Default Audio file and return
+     */
+
+    return NULL;
+}
 /* Parse Commandline arguments */
-static int parse_opts(const int *argc, char **argv,UInt16 *actionFlag, pid_t *darkice, pid_t *icecast){
+static int parse_opts(const int *argc, char **argv){
+    char *pidfile_path;
+    UInt16 actionFlag;
     static struct option cmdline_options[] = {
         {"pidfile", required_argument,NULL,'f'},
         {"start",no_argument,NULL, 's'},
         {"stop",no_argument,NULL,'k'},
         {NULL,0,NULL,0}
     };
- 
+    
     int opt;
     while ((opt = getopt_long(*argc, argv, "skf:",cmdline_options, NULL)) != 0){
         switch(opt){
             case 'f':
-                //process pid file and set darkice & icecast values                
+                pidfile_path = optarg;
             case 's':
-                *actionFlag = 1;
+                actionFlag = 1;
                 break;
             case 'k':
-                *actionFlag = 0;
+                actionFlag = 0;
                 break;
             case '?':
                 if (optopt == 'f')
@@ -223,13 +249,17 @@ static int parse_opts(const int *argc, char **argv,UInt16 *actionFlag, pid_t *da
                     fprintf(stderr, "Unknown option -%c .\n",optopt);
                 else
                     fprintf(stderr, "Unkown option character `\\x%x \n",optopt);
-                
-                return -1;
+                exit(EXIT_FAILURE);
             default:
-                //print default usage 
                 break;    
         }
     }
+    
+    if (actionFlag)
+        start_service(pidfile_path);
+    else 
+        stop_service(pidfile_path);
+    
     return optind; /* Index of the last processed value in argv */
 }
 
@@ -253,6 +283,7 @@ int main (int argc, const char * argv[])
             free(devices);
         return err;
     }
+
 
     // nIO -> 0 : output
     // nIO -> 1 : input 
