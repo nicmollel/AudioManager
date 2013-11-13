@@ -138,7 +138,7 @@ static int spawn_cmd(pid_t *pid, char **argv){
 }
 
 /* Change Default Audio device */
-static OSStatus SetDefaultAudioDevice(const AudioDeviceID *devices, const UInt16 *nAvailableDevices, const char *sDeviceUID, UInt16 nIO){
+static OSStatus SetDefaultAudioDevice(const AudioDeviceID *devices, const UInt16 *nAvailableDevices, const char *sDeviceUID, UInt16 IO){
     OSStatus err = noErr;
     CFStringRef sUID; 
     UInt32 nOutSize = sizeof(CFStringRef);
@@ -154,8 +154,11 @@ static OSStatus SetDefaultAudioDevice(const AudioDeviceID *devices, const UInt16
         }
  
         if (CFStringCompare(sUID,sTempUID,0) == kCFCompareEqualTo){
-            //set this as the default device
-            oPropertyAddress.mSelector = nIO? kAudioHardwarePropertyDefaultInputDevice : kAudioHardwarePropertyDefaultOutputDevice;
+            /*
+             IO: 1 -> Input
+                 0 -> Output
+             */
+            oPropertyAddress.mSelector = IO? kAudioHardwarePropertyDefaultInputDevice : kAudioHardwarePropertyDefaultOutputDevice;
             if ((err = AudioObjectSetPropertyData(kAudioObjectSystemObject, &oPropertyAddress, 0, NULL, sizeof(AudioDeviceID), &devices[nIndex])) != noErr){
                 if (sUID)
                     CFRelease(sUID);   
@@ -163,7 +166,7 @@ static OSStatus SetDefaultAudioDevice(const AudioDeviceID *devices, const UInt16
                 return err;  
                 
             } else {
-                fprintf(stdout, "Set the default %s device to: %s\n",nIO? "Input":"Output",sDeviceUID);
+                fprintf(stdout, "Set the default %s device to: %s\n",IO? "Input":"Output",sDeviceUID);
                 break;
             }
         }
@@ -185,14 +188,14 @@ static int process_pid_file(const char *pidfile, pid_t *darkice, pid_t *icecast,
     openstream = fopen(pidfile, "w+");
     if (openstream){
         if (IO)//Output
-            fprintf(openstream, "icecast_pid:%d\ndarkice_pid:%d\n",*icecast,*darkice);
+            fprintf(openstream,"icecast_pid:%d\ndarkice_pid:%d\n",*icecast,*darkice);
         else 
-            fscanf(openstream, "icecast_pid:%d\ndarkice_pid:%d\n", (int*)icecast,(int*)darkice);
+            fscanf(openstream,"icecast_pid:%d\ndarkice_pid:%d\n", (int*)icecast,(int*)darkice);
         fclose(openstream);
     } else {
         perror("fopen in process_pid_file");
         exit(EXIT_FAILURE);
-    }
+    }    
     
     return 0;
 }
@@ -205,7 +208,7 @@ static void *start_service (const char *pidfile){
      4. Start the services
      5. Save PID values and return
      */
-    
+        
     return NULL;
 }
     
@@ -216,8 +219,62 @@ static void *stop_service(const char *pidfile){
      3. if valid PID values, stop services
      4. overwrite PID values in file with 0
      5. Revert Default Audio file and return
+        -> DeviceUID:	AppleHDAEngineOutput:1B,0,1,1:0
      */
+    const char * default_device = "AppleHDAEngineOutput:1B,0,1,1:0";
+    AudioDeviceID *devices = NULL;
+    pid_t darkice, icecast;
+    OSStatus err = noErr;
+    UInt16 devicesAvailable =0;
+    
+    /*
+     process_pid_file
+     IO: 0 -> read
+         1 -> write
+     */
+    if (process_pid_file(pidfile, &darkice, &icecast,0) != 0){
+        fprintf(stderr,"Could not process pidfile: %s\n",pidfile);
+        exit(EXIT_FAILURE);
+    }
+    
+    if (darkice){
+        if(kill(darkice, SIGKILL) != 0)
+            perror("kill->darkice");
+    }
+    
+    sleep(5); 
 
+    if(icecast){
+        if (kill(icecast, SIGKILL) != 0)
+            perror("kill->icecast");
+    }
+    
+    //Overwrite PID values in the file
+    darkice = 0;
+    icecast = 0;
+    process_pid_file(pidfile, &darkice, &icecast, 1);
+    
+    if ((err = GetAudioDevices((Ptr*) devices,&devicesAvailable)) != noErr){
+        if (devices)
+            free(devices);
+        fprintf(stderr, "Could not enumerate Audio devices\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    /*
+     SetDefaultAudioDevice
+     IO: 1 -> Input
+     0 -> Output
+     */
+    if ((err = SetDefaultAudioDevice(devices, &devicesAvailable,default_device,1)) != noErr){
+        fprintf(stderr, "Could not set change default device to: %s",default_device);
+        exit(EXIT_FAILURE);
+    }
+    
+    //clean up
+    if(devices)
+        free(devices);
+    
     return NULL;
 }
 /* Parse Commandline arguments */
@@ -231,29 +288,33 @@ static int parse_opts(const int *argc, char **argv){
         {NULL,0,NULL,0}
     };
     
-    int opt;
-    while ((opt = getopt_long(*argc, argv, "skf:",cmdline_options, NULL)) != 0){
-        switch(opt){
-            case 'f':
-                pidfile_path = optarg;
-            case 's':
-                actionFlag = 1;
-                break;
-            case 'k':
-                actionFlag = 0;
-                break;
-            case '?':
-                if (optopt == 'f')
-                    fprintf(stderr, "The option -%c a file argument.\n", optopt);
-                else if (isprint(optopt))
-                    fprintf(stderr, "Unknown option -%c .\n",optopt);
-                else
-                    fprintf(stderr, "Unkown option character `\\x%x \n",optopt);
-                exit(EXIT_FAILURE);
-            default:
-                break;    
+    if (*argc > 1){
+        
+        int opt;
+        while ((opt = getopt_long(*argc, argv, "skf:",cmdline_options, NULL)) != -1){
+            switch(opt){
+                case 'f':
+                    pidfile_path = optarg;
+                case 's':
+                    actionFlag = 1;
+                    break;
+                case 'k':
+                    actionFlag = 0;
+                    break;
+                case '?':
+                    if (optopt == 'f')
+                        fprintf(stderr, "The option -%c a file argument.\n", optopt);
+                    else if (isprint(optopt))
+                        fprintf(stderr, "Unknown option -%c .\n",optopt);
+                    else
+                        fprintf(stderr, "Unkown option character `\\x%x \n",optopt);
+                    exit(EXIT_FAILURE);
+            }
         }
+    }else {
+        //usage
     }
+        
     
     if (actionFlag)
         start_service(pidfile_path);
@@ -285,8 +346,8 @@ int main (int argc, const char * argv[])
     }
 
 
-    // nIO -> 0 : output
-    // nIO -> 1 : input 
+    // IO -> 0 : output
+    // IO -> 1 : input 
 //    if ((err = SetDefaultAudioDevice(devices, &DevicesAvailable, "SoundflowerEngine:1",1)) != noErr){
 //        if(devices)
 //            free(devices);
